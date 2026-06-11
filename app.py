@@ -787,63 +787,70 @@ if st.session_state.page == "home":
             return f'<span class="top-scorer-pill" style="color:#f59e0b;">🏆 <span class="top-scorer-name">{s["name"]}</span> <span class="top-scorer-score">{s["score"]}/{total}</span></span>'
         return '<span class="top-scorer-pill" style="color:#444;">🏆 No scores yet</span>'
 
-    # CSS to style buttons as big cards — no separate button visible
+    # CSS — position button absolutely over the card
     st.markdown('''<style>
-.game-btn > div[data-testid="stButton"] > button {
-    background: #13131f !important;
-    border: 1px solid #1e1e30 !important;
-    border-radius: 20px !important;
-    padding: 28px 20px !important;
+.gc { position: relative; margin-bottom: 16px; }
+.gc button[kind="secondary"] {
+    position: absolute !important;
+    inset: 0 !important;
     width: 100% !important;
-    height: 180px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin-bottom: 16px !important;
-    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+    z-index: 99 !important;
+    border-radius: 20px !important;
 }
-.game-btn > div[data-testid="stButton"] > button:hover {
-    transform: translateY(-4px) !important;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.5) !important;
-}
-.game-btn-dq > div[data-testid="stButton"] > button { border-color: #6366f155 !important; }
-.game-btn-pq > div[data-testid="stButton"] > button { border-color: #4ade8055 !important; }
-.game-btn-fk > div[data-testid="stButton"] > button { border-color: #ec489955 !important; }
-.game-btn-sk > div[data-testid="stButton"] > button { border-color: #f59e0b55 !important; }
 </style>''', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
     dq_top = load_scores("lp_dumbquiz.json")
     pq_top = load_scores("lp_pyquiz.json")
-    fk_top = load_scores("lp_dumbquiz.json")
     sk_top = load_scores("lp_scramko.json")
-
-    dq_best = f"🏆 {dq_top[0]['name']} {dq_top[0]['score']}/20" if dq_top else "🏆 No scores yet"
-    pq_best = f"🏆 {pq_top[0]['name']} {pq_top[0]['score']}/20" if pq_top else "🏆 No scores yet"
-    fk_best = f"🏆 {fk_top[0]['name']} {fk_top[0]['score']}/20" if fk_top else "🏆 No scores yet"
-    sk_best = f"🏆 {sk_top[0]['name']} {sk_top[0]['score']}/10" if sk_top else "🏆 No scores yet"
+    dq_best = f"🏆 {dq_top[0]['name']} · {dq_top[0]['score']}/20" if dq_top else "🏆 No scores yet"
+    pq_best = f"🏆 {pq_top[0]['name']} · {pq_top[0]['score']}/20" if pq_top else "🏆 No scores yet"
+    sk_best = f"🏆 {sk_top[0]['name']} · {sk_top[0]['score']}/10" if sk_top else "🏆 No scores yet"
 
     with col1:
-        st.markdown('<div class="game-btn game-btn-dq">', unsafe_allow_html=True)
-        if st.button(f"🇰🇷  DumbQuiz\nKorean language quiz  ·  20 Qs\n{dq_best}", key="go_dq", use_container_width=True):
+        st.markdown(f'''<div class="gc">
+          <div class="game-card" style="border-color:#6366f144;">
+            <span class="game-icon">🇰🇷</span>
+            <div class="game-title" style="color:#818cf8;">DumbQuiz</div>
+            <div class="game-desc">Korean language quiz</div>
+            <div class="game-stats" style="color:#6366f1;">20 questions per game</div>
+            <div class="top-scorer-pill" style="color:#6366f1;margin-top:10px;">{dq_best}</div>
+          </div>''', unsafe_allow_html=True)
+        if st.button("▶", key="go_dq", use_container_width=True):
             st.session_state.page = "dumbquiz"
             st.session_state.game_state = "start"
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
-        st.markdown('<div class="game-btn game-btn-pq">', unsafe_allow_html=True)
-        if st.button(f"🐍  PyQuiz\nPython programming quiz  ·  20 Qs\n{pq_best}", key="go_pq", use_container_width=True):
+        st.markdown(f'''<div class="gc">
+          <div class="game-card" style="border-color:#4ade8044;">
+            <span class="game-icon">🐍</span>
+            <div class="game-title" style="color:#4ade80;">PyQuiz</div>
+            <div class="game-desc">Python programming quiz</div>
+            <div class="game-stats" style="color:#4ade80;">20 questions per game</div>
+            <div class="top-scorer-pill" style="color:#4ade80;margin-top:10px;">{pq_best}</div>
+          </div>''', unsafe_allow_html=True)
+        if st.button("▶", key="go_pq", use_container_width=True):
             st.session_state.page = "pyquiz"
             st.session_state.game_state = "start"
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col1:
-        st.markdown('<div class="game-btn game-btn-fk">', unsafe_allow_html=True)
-        if st.button(f"🃏  Flashko\nKorean flashcards  ·  20 cards\n{fk_best}", key="go_fk", use_container_width=True):
+        st.markdown(f'''<div class="gc">
+          <div class="game-card" style="border-color:#ec489944;">
+            <span class="game-icon">🃏</span>
+            <div class="game-title" style="color:#ec4899;">Flashko</div>
+            <div class="game-desc">Korean flashcards</div>
+            <div class="game-stats" style="color:#ec4899;">20 cards per session</div>
+            <div class="top-scorer-pill" style="color:#ec4899;margin-top:10px;">{dq_best}</div>
+          </div>''', unsafe_allow_html=True)
+        if st.button("▶", key="go_fk", use_container_width=True):
             st.session_state.page = "flashko"
             st.session_state.game_state = "start"
             st.session_state.cards = random.sample(FLASHKO_CARDS, 20)
@@ -854,8 +861,15 @@ if st.session_state.page == "home":
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
-        st.markdown('<div class="game-btn game-btn-sk">', unsafe_allow_html=True)
-        if st.button(f"🔤  ScramKo\nKorean word scramble  ·  10 words\n{sk_best}", key="go_sk", use_container_width=True):
+        st.markdown(f'''<div class="gc">
+          <div class="game-card" style="border-color:#f59e0b44;">
+            <span class="game-icon">🔤</span>
+            <div class="game-title" style="color:#f59e0b;">ScramKo</div>
+            <div class="game-desc">Korean word scramble</div>
+            <div class="game-stats" style="color:#f59e0b;">10 words per game</div>
+            <div class="top-scorer-pill" style="color:#f59e0b;margin-top:10px;">{sk_best}</div>
+          </div>''', unsafe_allow_html=True)
+        if st.button("▶", key="go_sk", use_container_width=True):
             st.session_state.page = "scramko"
             st.session_state.game_state = "start"
             st.rerun()
