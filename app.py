@@ -925,19 +925,74 @@ def run_quiz(questions_bank, score_file, color, total=20):
                 st.markdown('<div class="correct-box">✓ Correct!</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="wrong-box">✗ Wrong. Answer: <strong>{q["options"][q["answer"]]}</strong></div>', unsafe_allow_html=True)
-                hint_key = f"ai_hint_{st.session_state.current}"
+                chat_key = f"ai_chat_{st.session_state.current}"
                 if st.session_state.get("openai_key") and OPENAI_AVAILABLE:
-                    if hint_key not in st.session_state:
-                        if st.button("🤖 Ask AI to explain", key=f"ai_btn_{st.session_state.current}"):
-                            with st.spinner("AI is thinking..."):
-                                hint = get_ai_hint(q["question"], q["options"][q["answer"]], q["explanation"], q["category"])
-                            if hint:
-                                st.session_state[hint_key] = hint
+                    # Init chat history for this question
+                    if chat_key not in st.session_state:
+                        # Auto-send first explanation
+                        system = f"You are a friendly tutor helping a student learn. They got this question wrong: '{q['question']}'. The correct answer is: '{q['options'][q['answer']]}'. Category: {q['category']}. Base explanation: {q['explanation']}. Answer follow-up questions about this topic. Keep responses short (2-3 sentences), friendly, and encouraging."
+                        with st.spinner("🤖 AI is explaining..."):
+                            try:
+                                client = OpenAI(api_key=st.session_state.openai_key)
+                                resp = client.chat.completions.create(
+                                    model="gpt-4o-mini",
+                                    messages=[
+                                        {"role": "system", "content": system},
+                                        {"role": "user", "content": "Explain why this is the correct answer in a simple friendly way."}
+                                    ],
+                                    max_tokens=150, temperature=0.7,
+                                )
+                                ai_msg = resp.choices[0].message.content
+                                st.session_state[chat_key] = {
+                                    "system": system,
+                                    "history": [
+                                        {"role": "user", "content": "Explain why this is the correct answer in a simple friendly way."},
+                                        {"role": "assistant", "content": ai_msg}
+                                    ]
+                                }
+                            except Exception as e:
+                                st.session_state[chat_key] = {"system": "", "history": [], "error": str(e)}
+                        st.rerun()
+
+                    # Render chat
+                    if chat_key in st.session_state and "history" in st.session_state[chat_key]:
+                        chat_data = st.session_state[chat_key]
+                        st.markdown('<div style="background:#0f0f1a;border:1px solid #1e1e30;border-radius:10px;padding:14px;margin:8px 0;">', unsafe_allow_html=True)
+                        for msg in chat_data["history"]:
+                            if msg["role"] == "assistant":
+                                st.markdown(f'<div style="background:#1a1a2e;border-left:3px solid #6366f1;border-radius:0 8px 8px 0;padding:10px 14px;color:#a5b4fc;font-size:0.85rem;margin:4px 0;"><b>🤖 AI:</b> {msg["content"]}</div>', unsafe_allow_html=True)
+                            else:
+                                st.markdown(f'<div style="background:#1e1e2e;border-left:3px solid #ec4899;border-radius:0 8px 8px 0;padding:10px 14px;color:#f9a8d4;font-size:0.85rem;margin:4px 0;text-align:right;"><b>You:</b> {msg["content"]}</div>', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                        # Follow-up input
+                        follow_up = st.text_input("Ask a follow-up question...", key=f"followup_{st.session_state.current}_{len(chat_data['history'])}", placeholder="e.g. Can you give me an example?", label_visibility="collapsed")
+                        c_send, c_clear = st.columns([3, 1])
+                        with c_send:
+                            if st.button("Send 💬", key=f"send_{st.session_state.current}_{len(chat_data['history'])}", use_container_width=True):
+                                if follow_up.strip():
+                                    chat_data["history"].append({"role": "user", "content": follow_up.strip()})
+                                    with st.spinner("🤖 Thinking..."):
+                                        try:
+                                            client = OpenAI(api_key=st.session_state.openai_key)
+                                            msgs = [{"role": "system", "content": chat_data["system"]}] + chat_data["history"]
+                                            resp = client.chat.completions.create(
+                                                model="gpt-4o-mini",
+                                                messages=msgs,
+                                                max_tokens=150, temperature=0.7,
+                                            )
+                                            ai_reply = resp.choices[0].message.content
+                                            chat_data["history"].append({"role": "assistant", "content": ai_reply})
+                                            st.session_state[chat_key] = chat_data
+                                        except Exception:
+                                            pass
+                                    st.rerun()
+                        with c_clear:
+                            if st.button("Clear 🗑", key=f"clear_{st.session_state.current}", use_container_width=True):
+                                del st.session_state[chat_key]
                                 st.rerun()
-                    if hint_key in st.session_state:
-                        st.markdown(f'<div style="background:#1a1a2e;border-left:3px solid #6366f1;border-radius:0 8px 8px 0;padding:12px 16px;color:#a5b4fc;font-size:0.88rem;margin:6px 0;"><b>🤖 AI:</b> {st.session_state[hint_key]}</div>', unsafe_allow_html=True)
                 else:
-                    st.markdown('<div style="font-size:0.75rem;color:#333;margin:4px 0;">💡 Add OpenAI key in sidebar for AI explanations</div>', unsafe_allow_html=True)
+                    st.markdown('<div style="font-size:0.75rem;color:#333;margin:4px 0;">💡 Add OpenAI key in sidebar for AI chat</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="explanation">💡 {q["explanation"]}</div>', unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
             lbl = "See Results 🎉" if qnum == total else "Next →"
