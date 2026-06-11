@@ -994,8 +994,9 @@ def run_quiz(questions_bank, score_file, color, total=20):
                                             ai_reply = resp.choices[0].message.content
                                             chat_data["history"].append({"role": "assistant", "content": ai_reply})
                                             st.session_state[chat_key] = chat_data
-                                        except Exception:
-                                            pass
+                                        except Exception as e:
+                                            chat_data["history"].append({"role": "assistant", "content": f"Sorry, I couldn't respond. Error: {str(e)}"})
+                                            st.session_state[chat_key] = chat_data
                                     st.rerun()
                         with c_clear:
                             if st.button("Clear 🗑", key=f"clear_{st.session_state.current}", use_container_width=True):
