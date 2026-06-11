@@ -13,6 +13,11 @@ import random
 import json
 import os
 from datetime import datetime
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
 
 # ─────────────────────────────────────────────
 # Page Config
@@ -707,6 +712,41 @@ def init_state():
 init_state()
 
 # ─────────────────────────────────────────────
+# Sidebar — AI Settings
+# ─────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("### 🤖 AI Hint Settings")
+    st.markdown("Enter your OpenAI API key to enable AI hints.")
+    openai_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...", help="Get from platform.openai.com/api-keys")
+    if openai_key:
+        st.session_state.openai_key = openai_key
+        st.success("✅ AI Hints enabled!")
+    else:
+        st.info("💡 Add API key to enable AI Hints")
+    st.markdown("---")
+    st.markdown("**AI Hint** explains why the correct answer is right after a wrong answer.")
+
+# ─────────────────────────────────────────────
+# AI Hint Function
+# ─────────────────────────────────────────────
+def get_ai_hint(question, correct_answer, explanation, category):
+    key = st.session_state.get("openai_key", "")
+    if not key or not OPENAI_AVAILABLE:
+        return None
+    try:
+        client = OpenAI(api_key=key)
+        prompt = f"You are a friendly tutor. A student got this wrong:\nQuestion: {question}\nCorrect Answer: {correct_answer}\nCategory: {category}\nExplanation: {explanation}\n\nGive a short friendly 2-sentence explanation. Keep it simple and encouraging."
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=120,
+            temperature=0.7,
+        )
+        return response.choices[0].message.content
+    except Exception:
+        return None
+
+# ─────────────────────────────────────────────
 # Header
 # ─────────────────────────────────────────────
 col_back, col_title = st.columns([1, 6])
@@ -881,8 +921,23 @@ def run_quiz(questions_bank, score_file, color, total=20):
                     if i == q["answer"]: st.success(f"✓ {opt}")
                     elif i == sel and not correct: st.error(f"✗ {opt}")
                     else: st.button(opt, key=f"os_{i}", disabled=True, use_container_width=True)
-            if correct: st.markdown('<div class="correct-box">✓ Correct!</div>', unsafe_allow_html=True)
-            else: st.markdown(f'<div class="wrong-box">✗ Wrong. Answer: <strong>{q["options"][q["answer"]]}</strong></div>', unsafe_allow_html=True)
+            if correct:
+                st.markdown('<div class="correct-box">✓ Correct!</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="wrong-box">✗ Wrong. Answer: <strong>{q["options"][q["answer"]]}</strong></div>', unsafe_allow_html=True)
+                hint_key = f"ai_hint_{st.session_state.current}"
+                if st.session_state.get("openai_key") and OPENAI_AVAILABLE:
+                    if hint_key not in st.session_state:
+                        if st.button("🤖 Ask AI to explain", key=f"ai_btn_{st.session_state.current}"):
+                            with st.spinner("AI is thinking..."):
+                                hint = get_ai_hint(q["question"], q["options"][q["answer"]], q["explanation"], q["category"])
+                            if hint:
+                                st.session_state[hint_key] = hint
+                                st.rerun()
+                    if hint_key in st.session_state:
+                        st.markdown(f'<div style="background:#1a1a2e;border-left:3px solid #6366f1;border-radius:0 8px 8px 0;padding:12px 16px;color:#a5b4fc;font-size:0.88rem;margin:6px 0;"><b>🤖 AI:</b> {st.session_state[hint_key]}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<div style="font-size:0.75rem;color:#333;margin:4px 0;">💡 Add OpenAI key in sidebar for AI explanations</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="explanation">💡 {q["explanation"]}</div>', unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
             lbl = "See Results 🎉" if qnum == total else "Next →"
