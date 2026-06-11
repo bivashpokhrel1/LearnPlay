@@ -716,15 +716,25 @@ init_state()
 # ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 🤖 AI Hint Settings")
-    st.markdown("Enter your OpenAI API key to enable AI hints.")
-    openai_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...", help="Get from platform.openai.com/api-keys")
-    if openai_key:
-        st.session_state.openai_key = openai_key
+    # Auto-load from Streamlit secrets if available
+    secret_key = ""
+    try:
+        secret_key = st.secrets["OPENAI_API_KEY"]
+    except Exception:
+        pass
+
+    if secret_key:
+        st.session_state.openai_key = secret_key
         st.success("✅ AI Hints enabled!")
     else:
-        st.info("💡 Add API key to enable AI Hints")
+        openai_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...", help="Get from platform.openai.com/api-keys")
+        if openai_key:
+            st.session_state.openai_key = openai_key
+            st.success("✅ AI Hints enabled!")
+        else:
+            st.info("💡 Add API key to enable AI Hints")
     st.markdown("---")
-    st.markdown("**AI Hint** explains why the correct answer is right after a wrong answer.")
+    st.markdown("**AI Chat** — ask follow-up questions about any wrong answer.")
 
 # ─────────────────────────────────────────────
 # AI Hint Function
