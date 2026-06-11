@@ -1161,7 +1161,8 @@ elif st.session_state.page == "scramko":
         c1,c2,c3 = st.columns([1,2,1])
         with c2:
             if st.button("🎮 Start", use_container_width=True):
-                selected = random.sample(SCRAMKO_WORDS, 10)
+                eligible = [w for w in SCRAMKO_WORDS if len(w["korean"].replace(" ", "")) >= 3]
+                selected = random.sample(eligible, min(10, len(eligible)))
                 st.session_state.words = selected
                 st.session_state.current = 0
                 st.session_state.score = 0
