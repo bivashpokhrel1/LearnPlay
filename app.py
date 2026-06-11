@@ -676,12 +676,15 @@ def save_score(filename, name, score, total):
         json.dump(scores, f)
 
 def scramble_word(word):
-    letters = list(word)
+    # Scramble Korean syllables (each character is one syllable block)
+    chars = list(word)
     for _ in range(20):
-        random.shuffle(letters)
-        if "".join(letters) != word and len(word) > 1:
-            return "".join(letters)
+        random.shuffle(chars)
+        scrambled = "".join(chars)
+        if scrambled != word and len(word) > 1:
+            return scrambled
     return word[::-1] if len(word) > 1 else word + "?"
+
 
 def render_leaderboard(filename, total):
     scores = load_scores(filename)
@@ -1167,7 +1170,7 @@ elif st.session_state.page == "scramko":
                 st.session_state.hint_used = False
                 st.session_state.hint_count = 0
                 st.session_state.score_saved = False
-                st.session_state.scrambled = scramble_word(selected[0]["romanized"])
+                st.session_state.scrambled = scramble_word(selected[0]["korean"])
                 st.session_state.game_state = "playing"
                 st.rerun()
         st.markdown("### 🏆 High Scores")
@@ -1182,23 +1185,23 @@ elif st.session_state.page == "scramko":
         with c2: st.markdown(f'<div style="text-align:center;font-size:0.65rem;color:#555;">{word["category"]}</div>', unsafe_allow_html=True)
         with c3: st.markdown(f'<div class="progress-text" style="text-align:right;">Score: {st.session_state.score}</div>', unsafe_allow_html=True)
 
-        hint_html = f'<div style="font-size:0.82rem;color:#8b5cf6;margin-top:8px;">💡 Hint: {word["romanized"][0]}{"_ " * (len(word["romanized"])-1)} ({len(word["romanized"])} letters)</div>' if st.session_state.hint_used else ""
+        hint_html = f'<div style="font-size:0.82rem;color:#8b5cf6;margin-top:8px;">💡 Hint: {word["korean"][0]}{"＿ " * (len(word["korean"])-1)} ({len(word["korean"])} syllables) · {word["romanized"]}</div>' if st.session_state.hint_used else ""
         st.markdown(f'''<div class="scramble-card">
             <div style="font-size:0.65rem;letter-spacing:3px;color:#333;text-transform:uppercase;margin-bottom:12px;">WORD {wnum} OF 10</div>
             <div class="meaning-text">"{word['meaning']}"</div>
             <div class="scrambled-word">{st.session_state.scrambled}</div>
-            <div style="font-size:0.78rem;color:#333;">Unscramble the romanization above</div>
+            <div style="font-size:0.78rem;color:#333;">Unscramble the Korean syllables above</div>
             {hint_html}
         </div>''', unsafe_allow_html=True)
 
         if not st.session_state.answered:
-            user_input = st.text_input("Answer", placeholder="Type romanization...", label_visibility="collapsed", key=f"si_{wnum}").upper().strip()
+            user_input = st.text_input("Answer", placeholder="한국어로 입력하세요...", label_visibility="collapsed", key=f"si_{wnum}").strip()
             c1,c2,c3 = st.columns(3)
             with c1:
                 if st.button("✓ Submit", use_container_width=True):
                     if user_input:
                         st.session_state.answered = True
-                        st.session_state.correct = user_input == word["romanized"]
+                        st.session_state.correct = user_input == word["korean"]
                         if st.session_state.correct: st.session_state.score += 1
                         st.rerun()
             with c2:
@@ -1232,7 +1235,7 @@ elif st.session_state.page == "scramko":
                     st.session_state.correct = False
                     st.session_state.hint_used = False
                     if nxt >= 10: st.session_state.game_state = "result"
-                    else: st.session_state.scrambled = scramble_word(st.session_state.words[nxt]["romanized"])
+                    else: st.session_state.scrambled = scramble_word(st.session_state.words[nxt]["korean"])
                     st.rerun()
 
     elif st.session_state.game_state == "result":
