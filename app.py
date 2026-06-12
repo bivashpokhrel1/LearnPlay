@@ -853,8 +853,16 @@ def get_gemini_response(messages, key):
     if not key or not AI_AVAILABLE:
         return None
     try:
-        # (OpenAI version)
-        pass
+        client = OpenAI(api_key=key)
+        system = next((m["content"] for m in messages if m["role"] == "system"), "You are a helpful tutor.")
+        msgs = [m for m in messages if m["role"] != "system"]
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "system", "content": system}] + msgs,
+            max_tokens=150,
+            temperature=0.7,
+        )
+        return resp.choices[0].message.content
     except Exception as e:
         return "Error: " + str(e)
 
