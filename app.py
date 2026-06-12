@@ -814,6 +814,9 @@ def init_state():
         "cards": [], "flipped": False, "learned": set(),
         "words": [], "correct": False, "hint_used": False,
         "hint_count": 0, "scrambled": "",
+        "stats": {"total_questions": 0, "total_correct": 0, "games_played": 0,
+                  "category_correct": {}, "category_total": {}, "streak": 0,
+                  "last_played": "", "daily_done": False},
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -1021,6 +1024,94 @@ if st.session_state.page == "home":
             </div>''', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # ── Stats Dashboard ──────────────────────
+    stats = st.session_state.stats
+    if stats["total_questions"] > 0:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('''<div style="font-size:0.7rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;background:linear-gradient(90deg,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">📊 Your Progress</div>''', unsafe_allow_html=True)
+
+        acc = int(stats["total_correct"] / stats["total_questions"] * 100) if stats["total_questions"] > 0 else 0
+        c1,c2,c3,c4 = st.columns(4)
+        for col, val, lbl, clr in [
+            (c1, stats["games_played"], "Games Played", "#a78bfa"),
+            (c2, stats["total_questions"], "Questions", "#f472b6"),
+            (c3, f"{acc}%", "Accuracy", "#4ade80"),
+            (c4, stats["total_correct"], "Correct", "#f59e0b"),
+        ]:
+            with col:
+                st.markdown(f'''<div style="background:linear-gradient(135deg,#13131f,#1a1a2e);border:1px solid #2a2a4a;border-radius:14px;padding:16px 8px;text-align:center;margin-bottom:8px;">
+                    <div style="font-size:1.8rem;font-weight:900;color:{clr};">{val}</div>
+                    <div style="font-size:0.72rem;color:#555;margin-top:4px;">{lbl}</div>
+                </div>''', unsafe_allow_html=True)
+
+        # Category breakdown
+        if stats["category_total"]:
+            st.markdown('''<div style="font-size:0.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#555;margin:8px 0 6px;">By Category</div>''', unsafe_allow_html=True)
+            for cat, total_c in sorted(stats["category_total"].items(), key=lambda x: -x[1]):
+                correct_c = stats["category_correct"].get(cat, 0)
+                pct_c = int(correct_c / total_c * 100)
+                bar_color = "#4ade80" if pct_c >= 70 else "#f59e0b" if pct_c >= 50 else "#f87171"
+                st.markdown(f'''<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                    <div style="font-size:0.8rem;color:#f0f0ff;min-width:100px;">{cat}</div>
+                    <div style="flex:1;background:#1a1a2e;border-radius:99px;height:8px;">
+                        <div style="width:{pct_c}%;background:{bar_color};height:8px;border-radius:99px;"></div>
+                    </div>
+                    <div style="font-size:0.78rem;color:{bar_color};font-weight:700;min-width:40px;">{pct_c}%</div>
+                    <div style="font-size:0.72rem;color:#444;">{correct_c}/{total_c}</div>
+                </div>''', unsafe_allow_html=True)
+
+    # ── Daily Challenge ───────────────────────
+    from datetime import date
+    today = str(date.today())
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown('''<div style="font-size:0.7rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;background:linear-gradient(90deg,#f59e0b,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">🔥 Daily Challenge</div>''', unsafe_allow_html=True)
+
+    daily_done = st.session_state.stats.get("daily_date") == today and st.session_state.stats.get("daily_done", False)
+
+    if not daily_done:
+        # Pick a daily question based on date (deterministic)
+        import hashlib
+        day_hash = int(hashlib.md5(today.encode()).hexdigest(), 16)
+        all_daily = DUMBQUIZ_QUESTIONS + PYQUIZ_QUESTIONS
+        daily_q = all_daily[day_hash % len(all_daily)]
+
+        if "daily_answered" not in st.session_state:
+            st.session_state.daily_answered = False
+            st.session_state.daily_selected = None
+
+        st.markdown(f'''<div class="q-card" style="border-color:#f59e0b44;">
+            <div style="font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f59e0b;margin-bottom:6px;">📅 {today} · {daily_q["category"]} · {daily_q["difficulty"]}</div>
+            <div style="font-size:1.05rem;font-weight:700;color:#f0f0ff;">{daily_q["question"]}</div>
+            {"<div style=\'font-size:1.5rem;color:#a78bfa;margin-top:6px;\'>" + daily_q.get("korean","") + "</div>" if daily_q.get("korean") else ""}
+        </div>''', unsafe_allow_html=True)
+
+        if not st.session_state.daily_answered:
+            cols = st.columns(2)
+            for i, opt in enumerate(daily_q["options"]):
+                with cols[i%2]:
+                    if st.button(opt, key=f"daily_opt_{i}", use_container_width=True):
+                        st.session_state.daily_answered = True
+                        st.session_state.daily_selected = i
+                        if i == daily_q["answer"]:
+                            st.session_state.stats["daily_done"] = True
+                            st.session_state.stats["daily_date"] = today
+                        st.rerun()
+        else:
+            sel = st.session_state.daily_selected
+            if sel == daily_q["answer"]:
+                st.markdown('<div class="correct-box">✓ Correct! Daily challenge complete! 🔥</div>', unsafe_allow_html=True)
+                st.session_state.stats["daily_done"] = True
+                st.session_state.stats["daily_date"] = today
+            else:
+                st.markdown(f'<div class="wrong-box">✗ Wrong. Answer: {daily_q["options"][daily_q["answer"]]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="explanation">💡 {daily_q["explanation"]}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('''<div style="background:linear-gradient(135deg,#052e16,#0a2e1a);border:1px solid #4ade8044;border-radius:14px;padding:20px;text-align:center;">
+            <div style="font-size:2rem;">🔥</div>
+            <div style="font-size:1rem;font-weight:700;color:#4ade80;margin-top:6px;">Daily Challenge Complete!</div>
+            <div style="font-size:0.85rem;color:#555;margin-top:4px;">Come back tomorrow for a new question</div>
+        </div>''', unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────
 # QUIZ ENGINE (shared by DumbQuiz + PyQuiz)
 # ─────────────────────────────────────────────
@@ -1137,6 +1228,10 @@ def run_quiz(questions_bank, score_file, color, total=20):
     elif st.session_state.game_state == "result":
         score = st.session_state.score
         pct = score / total
+        # Count game played once
+        if not st.session_state.get("_game_counted_" + score_file):
+            st.session_state.stats["games_played"] += 1
+            st.session_state["_game_counted_" + score_file] = True
         if pct >= 0.9: grade,gc = "🏆 Expert!","#4ade80"
         elif pct >= 0.7: grade,gc = "⭐ Advanced!","#6366f1"
         elif pct >= 0.5: grade,gc = "👍 Intermediate!",color
@@ -1388,7 +1483,17 @@ elif st.session_state.page == "scramko":
                 st.session_state.score_saved = False
                 st.rerun()
 
-# Footer
-st.markdown('''<div style="text-align:center;color:#111;font-size:0.78rem;margin-top:48px;padding-top:14px;border-top:1px solid #111;">
-LearnPlay · Korean & Python Learning Hub · Team Aatank Capstone Project
+# Footer with credits
+st.markdown('''<div style="text-align:center;margin-top:56px;padding-top:20px;border-top:1px solid #1a1a2e;">
+    <div style="font-size:0.95rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#f472b6,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px;">🎮 LearnPlay</div>
+    <div style="font-size:0.8rem;color:#555;margin-bottom:10px;">Korean & Python Learning Hub</div>
+    <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-size:0.75rem;color:#444;">Built with ❤️ by</span>
+        <span style="font-size:0.75rem;color:#a78bfa;font-weight:600;">Bivash Pokhrel</span>
+        <span style="font-size:0.75rem;color:#4ade80;font-weight:600;">Bishal Joshi</span>
+        <span style="font-size:0.75rem;color:#f472b6;font-weight:600;">Nitesh Bhattarai</span>
+        <span style="font-size:0.75rem;color:#f59e0b;font-weight:600;">Anil Singh Goyala</span>
+        <span style="font-size:0.75rem;color:#38bdf8;font-weight:600;">Gaurav Giri</span>
+    </div>
+    <div style="font-size:0.72rem;color:#333;">Team Aatank · JEI University · Capstone Design 2026 · Powered by Streamlit & OpenAI</div>
 </div>''', unsafe_allow_html=True)
