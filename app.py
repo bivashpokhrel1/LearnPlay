@@ -46,8 +46,40 @@ html, body, [class*="css"] { font-family: 'Outfit', 'Noto Sans KR', sans-serif; 
 @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 @keyframes rainbow { 0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)} }
 
-/* ── Dark mode ── */
+/* ── Dark mode background with design ── */
 body, .stApp { background: #07070f !important; color: #f0f0ff !important; }
+
+/* Animated gradient orbs in background */
+.stApp::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+        radial-gradient(ellipse 600px 400px at 10% 20%, #6366f115 0%, transparent 70%),
+        radial-gradient(ellipse 500px 500px at 90% 80%, #ec489912 0%, transparent 70%),
+        radial-gradient(ellipse 400px 300px at 50% 50%, #f59e0b08 0%, transparent 70%),
+        radial-gradient(ellipse 700px 400px at 80% 10%, #4ade8010 0%, transparent 70%);
+    animation: bg-shift 12s ease-in-out infinite alternate;
+}
+@keyframes bg-shift {
+    0%   { opacity: 0.7; transform: scale(1) translateY(0px); }
+    50%  { opacity: 1;   transform: scale(1.05) translateY(-20px); }
+    100% { opacity: 0.7; transform: scale(1) translateY(0px); }
+}
+
+/* Grid lines overlay */
+.stApp::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+        linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+}
+
+/* Make sure content sits above the background effects */
+.main .block-container { position: relative; z-index: 1; }
+section[data-testid="stSidebar"] { position: relative; z-index: 2; }
 
 /* ── Game cards ── */
 .game-card {
