@@ -854,7 +854,7 @@ def get_gemini_response(messages, key):
         return None
     try:
         genai.configure(api_key=key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         prompt = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in messages])
         response = model.generate_content(prompt)
         return response.text
