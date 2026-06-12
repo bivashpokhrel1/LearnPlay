@@ -38,9 +38,30 @@ st.markdown("""
 
 html, body, [class*="css"] {
     font-family: 'Outfit', 'Noto Sans KR', sans-serif;
-    background: #0c0c14;
-    color: #f0f0ff;
 }
+/* ── Dark mode (default) ── */
+body, .stApp { background: #0c0c14 !important; color: #f0f0ff !important; }
+/* ── Light mode ── */
+body.light-mode, .stApp.light-mode { background: #f5f5ff !important; color: #111 !important; }
+.light-mode .game-card { background: #ffffff !important; border-color: #e0e0f0 !important; }
+.light-mode .q-card { background: #ffffff !important; border-color: #e0e0f0 !important; }
+.light-mode .flash-front { background: linear-gradient(135deg,#eeeeff,#f5f5ff) !important; border-color: #c0c0e0 !important; }
+.light-mode .flash-back { background: linear-gradient(135deg,#eeffee,#f5fff5) !important; border-color: #c0e0c0 !important; }
+.light-mode .scramble-card { background: #ffffff !important; border-color: #e0e0f0 !important; }
+.light-mode .score-card { background: #ffffff !important; border-color: #e0e0f0 !important; }
+.light-mode .home-lb { background: #ffffff !important; border-color: #e0e0f0 !important; }
+.light-mode .lb-row { border-color: #f0f0f0 !important; }
+.light-mode .lb-name { color: #111 !important; }
+.light-mode .hero-sub { color: #888 !important; }
+.light-mode .explanation { background: #f5f5ff !important; border-color: #e0e0f0 !important; color: #444 !important; }
+.light-mode .code-block { background: #f0f0f8 !important; border-color: #e0e0f0 !important; color: #111 !important; }
+.light-mode .correct-box { background: #e8fff0 !important; }
+.light-mode .wrong-box { background: #fff0f0 !important; }
+.light-mode .q-text { color: #111 !important; }
+.light-mode .q-cat { color: #888 !important; }
+.light-mode section[data-testid="stSidebar"] { background: #ffffff !important; border-color: #e0e0f0 !important; }
+.light-mode .stButton > button { background: #ffffff !important; border-color: #e0e0f0 !important; color: #111 !important; }
+.light-mode .stTextInput > div > div > input { background: #ffffff !important; border-color: #e0e0f0 !important; color: #111 !important; }
 
 /* ── Animations ── */
 @keyframes fadeInUp {
@@ -702,6 +723,7 @@ def init_state():
     defaults = {
         "page": "home",
         "game_state": "start",
+        "dark_mode": True,
         "questions": [], "current": 0, "score": 0,
         "answered": False, "selected": None, "score_saved": False,
         "cards": [], "flipped": False, "learned": set(),
@@ -762,7 +784,13 @@ def get_ai_hint(question, correct_answer, explanation, category):
 # ─────────────────────────────────────────────
 # Header
 # ─────────────────────────────────────────────
-col_back, col_title = st.columns([1, 6])
+# Inject light/dark class on body
+if st.session_state.dark_mode:
+    st.markdown('<style>body, .stApp { background: #0c0c14 !important; color: #f0f0ff !important; }</style>', unsafe_allow_html=True)
+else:
+    st.markdown('<style>body, .stApp, [class*="css"], section[data-testid="stAppViewContainer"] { background: #f5f5ff !important; color: #111 !important; } .game-card, .q-card, .scramble-card, .score-card, .home-lb { background: #ffffff !important; border-color: #e0e0f0 !important; } .game-desc, .q-cat, .hero-sub { color: #888 !important; } .lb-name, .q-text { color: #111 !important; } .explanation { background: #f5f5ff !important; border-color: #e0e0f0 !important; color: #555 !important; } .code-block { background: #f0f0f8 !important; color: #111 !important; } .correct-box { background: #e8fff0 !important; } .wrong-box { background: #fff0f0 !important; } .stButton > button { background: #ffffff !important; border-color: #e0e0f0 !important; color: #111 !important; } .stTextInput > div > div > input { background: #ffffff !important; border-color: #e0e0f0 !important; color: #111 !important; } .flash-front { background: linear-gradient(135deg,#eeeeff,#f5f5ff) !important; border-color: #c0c0e0 !important; } .flash-back { background: linear-gradient(135deg,#eeffee,#f5fff5) !important; } section[data-testid="stSidebar"] { background: #ffffff !important; border-color: #e0e0f0 !important; }</style>', unsafe_allow_html=True)
+
+col_back, col_title, col_theme = st.columns([1, 5, 1])
 with col_title:
     st.markdown('''<div class="hero"><div class="hero-title">🎮 LearnPlay</div><div class="hero-sub">Korean & Python Learning Hub</div></div>''', unsafe_allow_html=True)
 with col_back:
@@ -772,6 +800,12 @@ with col_back:
             st.session_state.page = "home"
             st.session_state.game_state = "start"
             st.rerun()
+with col_theme:
+    st.markdown("<br>", unsafe_allow_html=True)
+    theme_label = "☀️ Light" if st.session_state.dark_mode else "🌙 Dark"
+    if st.button(theme_label, key="theme_toggle"):
+        st.session_state.dark_mode = not st.session_state.dark_mode
+        st.rerun()
 
 # ─────────────────────────────────────────────
 # HOME SCREEN
