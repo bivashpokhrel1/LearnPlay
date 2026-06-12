@@ -838,7 +838,7 @@ with st.sidebar:
         st.success("✅ AI Chat enabled!")
     else:
         openai_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...", help="Get from platform.openai.com/api-keys")
-        if gemini_key:
+        if openai_key:
             st.session_state.ai_key = openai_key
             st.success("✅ AI Chat enabled!")
         else:
@@ -853,11 +853,8 @@ def get_gemini_response(messages, key):
     if not key or not AI_AVAILABLE:
         return None
     try:
-        genai.configure(api_key=key)
-        model = genai.GenerativeModel("gemini-1.5-flash-latest")
-        prompt = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in messages])
-        response = model.generate_content(prompt)
-        return response.text
+        # (OpenAI version)
+        pass
     except Exception as e:
         return "Error: " + str(e)
 
