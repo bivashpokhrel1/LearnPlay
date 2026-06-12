@@ -14,10 +14,10 @@ import json
 import os
 from datetime import datetime
 try:
-    from openai import OpenAI
-    OPENAI_AVAILABLE = True
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
 except ImportError:
-    OPENAI_AVAILABLE = False
+    GEMINI_AVAILABLE = False
 
 # ─────────────────────────────────────────────
 # Page Config
@@ -825,46 +825,41 @@ init_state()
 # Sidebar — AI Settings
 # ─────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### 🤖 AI Hint Settings")
+    st.markdown("### 🤖 AI Chat — Gemini")
     # Auto-load from Streamlit secrets if available
     secret_key = ""
     try:
-        secret_key = st.secrets["OPENAI_API_KEY"]
+        secret_key = st.secrets["GEMINI_API_KEY"]
     except Exception:
         pass
 
     if secret_key:
-        st.session_state.openai_key = secret_key
-        st.success("✅ AI Hints enabled!")
+        st.session_state.gemini_key = secret_key
+        st.success("✅ AI Chat enabled!")
     else:
-        openai_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...", help="Get from platform.openai.com/api-keys")
-        if openai_key:
-            st.session_state.openai_key = openai_key
-            st.success("✅ AI Hints enabled!")
+        gemini_key = st.text_input("Gemini API Key", type="password", placeholder="AIza...", help="Free from aistudio.google.com/apikey")
+        if gemini_key:
+            st.session_state.gemini_key = gemini_key
+            st.success("✅ AI Chat enabled!")
         else:
-            st.info("💡 Add API key to enable AI Hints")
+            st.info("💡 Add Gemini API key to enable AI Chat")
     st.markdown("---")
     st.markdown("**AI Chat** — ask follow-up questions about any wrong answer.")
 
 # ─────────────────────────────────────────────
 # AI Hint Function
 # ─────────────────────────────────────────────
-def get_ai_hint(question, correct_answer, explanation, category):
-    key = st.session_state.get("openai_key", "")
-    if not key or not OPENAI_AVAILABLE:
+def get_gemini_response(messages, key):
+    if not key or not GEMINI_AVAILABLE:
         return None
     try:
-        client = OpenAI(api_key=key)
-        prompt = f"You are a friendly tutor. A student got this wrong:\nQuestion: {question}\nCorrect Answer: {correct_answer}\nCategory: {category}\nExplanation: {explanation}\n\nGive a short friendly 2-sentence explanation. Keep it simple and encouraging."
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=120,
-            temperature=0.7,
-        )
-        return response.choices[0].message.content
-    except Exception:
-        return None
+        genai.configure(api_key=key)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        prompt = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in messages])
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return "Error: " + str(e)
 
 # ─────────────────────────────────────────────
 # Header
@@ -1084,32 +1079,14 @@ def run_quiz(questions_bank, score_file, color, total=20):
             else:
                 st.markdown(f'<div class="wrong-box">✗ Wrong. Answer: <strong>{q["options"][q["answer"]]}</strong></div>', unsafe_allow_html=True)
                 chat_key = f"ai_chat_{st.session_state.current}"
-                if st.session_state.get("openai_key") and OPENAI_AVAILABLE:
+                if st.session_state.get("gemini_key") and GEMINI_AVAILABLE:
                     # Init chat history for this question
                     if chat_key not in st.session_state:
-                        # Auto-send first explanation
-                        system = f"You are a friendly tutor helping a student learn. They got this question wrong: '{q['question']}'. The correct answer is: '{q['options'][q['answer']]}'. Category: {q['category']}. Base explanation: {q['explanation']}. Answer follow-up questions about this topic. Keep responses short (2-3 sentences), friendly, and encouraging."
+                        sys_prompt = f"You are a friendly tutor. Student got wrong: Q={q['question']}, Answer={q['options'][q['answer']]}, Category={q['category']}, Hint={q['explanation']}. Keep replies short, friendly, encouraging."
+                        init_msgs = [{"role": "system", "content": sys_prompt}, {"role": "user", "content": "Explain why this is correct simply."}]
                         with st.spinner("🤖 AI is explaining..."):
-                            try:
-                                client = OpenAI(api_key=st.session_state.openai_key)
-                                resp = client.chat.completions.create(
-                                    model="gpt-4o-mini",
-                                    messages=[
-                                        {"role": "system", "content": system},
-                                        {"role": "user", "content": "Explain why this is the correct answer in a simple friendly way."}
-                                    ],
-                                    max_tokens=150, temperature=0.7,
-                                )
-                                ai_msg = resp.choices[0].message.content
-                                st.session_state[chat_key] = {
-                                    "system": system,
-                                    "history": [
-                                        {"role": "user", "content": "Explain why this is the correct answer in a simple friendly way."},
-                                        {"role": "assistant", "content": ai_msg}
-                                    ]
-                                }
-                            except Exception as e:
-                                st.session_state[chat_key] = {"system": "", "history": [], "error": str(e)}
+                            ai_msg = get_gemini_response(init_msgs, st.session_state.gemini_key)
+                        st.session_state[chat_key] = {"system": sys_prompt, "history": [{"role": "user", "content": "Explain why this is correct simply."}, {"role": "assistant", "content": ai_msg or "Sorry, could not explain right now."}]}
                         st.rerun()
 
                     # Render chat
@@ -1122,36 +1099,24 @@ def run_quiz(questions_bank, score_file, color, total=20):
                             else:
                                 st.markdown(f'<div style="background:#1e1e2e;border-left:3px solid #ec4899;border-radius:0 8px 8px 0;padding:10px 14px;color:#f9a8d4;font-size:0.85rem;margin:4px 0;text-align:right;"><b>You:</b> {msg["content"]}</div>', unsafe_allow_html=True)
                         st.markdown('</div>', unsafe_allow_html=True)
-
-                        # Follow-up input
-                        follow_up = st.text_input("Ask a follow-up question...", key=f"followup_{st.session_state.current}_{len(chat_data['history'])}", placeholder="e.g. Can you give me an example?", label_visibility="collapsed")
+                        follow_up = st.text_input("Ask a follow-up...", key=f"followup_{st.session_state.current}_{len(chat_data['history'])}", placeholder="e.g. Can you give me an example?", label_visibility="collapsed")
                         c_send, c_clear = st.columns([3, 1])
                         with c_send:
                             if st.button("Send 💬", key=f"send_{st.session_state.current}_{len(chat_data['history'])}", use_container_width=True):
                                 if follow_up.strip():
                                     chat_data["history"].append({"role": "user", "content": follow_up.strip()})
                                     with st.spinner("🤖 Thinking..."):
-                                        try:
-                                            client = OpenAI(api_key=st.session_state.openai_key)
-                                            msgs = [{"role": "system", "content": chat_data["system"]}] + chat_data["history"]
-                                            resp = client.chat.completions.create(
-                                                model="gpt-4o-mini",
-                                                messages=msgs,
-                                                max_tokens=150, temperature=0.7,
-                                            )
-                                            ai_reply = resp.choices[0].message.content
-                                            chat_data["history"].append({"role": "assistant", "content": ai_reply})
-                                            st.session_state[chat_key] = chat_data
-                                        except Exception as e:
-                                            chat_data["history"].append({"role": "assistant", "content": f"Sorry, I couldn't respond. Error: {str(e)}"})
-                                            st.session_state[chat_key] = chat_data
+                                        msgs = [{"role": "system", "content": chat_data["system"]}] + chat_data["history"]
+                                        ai_reply = get_gemini_response(msgs, st.session_state.gemini_key)
+                                        chat_data["history"].append({"role": "assistant", "content": ai_reply or "Sorry, could not respond."})
+                                        st.session_state[chat_key] = chat_data
                                     st.rerun()
                         with c_clear:
                             if st.button("Clear 🗑", key=f"clear_{st.session_state.current}", use_container_width=True):
                                 del st.session_state[chat_key]
                                 st.rerun()
                 else:
-                    st.markdown('<div style="font-size:0.75rem;color:#333;margin:4px 0;">💡 Add OpenAI key in sidebar for AI chat</div>', unsafe_allow_html=True)
+                    st.markdown('<div style="font-size:0.75rem;color:#555;margin:4px 0;">💡 Add Gemini API key in sidebar for AI chat</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="explanation">💡 {q["explanation"]}</div>', unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
             lbl = "See Results 🎉" if qnum == total else "Next →"
