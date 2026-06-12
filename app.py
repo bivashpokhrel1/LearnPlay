@@ -14,10 +14,10 @@ import json
 import os
 from datetime import datetime
 try:
-    import google.generativeai as genai
-    GEMINI_AVAILABLE = True
+    from openai import OpenAI
+    AI_AVAILABLE = True
 except ImportError:
-    GEMINI_AVAILABLE = False
+    AI_AVAILABLE = False
 
 # ─────────────────────────────────────────────
 # Page Config
@@ -825,21 +825,21 @@ init_state()
 # Sidebar — AI Settings
 # ─────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### 🤖 AI Chat — Gemini")
+    st.markdown("### 🤖 AI Chat — GPT")
     # Auto-load from Streamlit secrets if available
     secret_key = ""
     try:
-        secret_key = st.secrets["GEMINI_API_KEY"]
+        secret_key = st.secrets["OPENAI_API_KEY"]
     except Exception:
         pass
 
     if secret_key:
-        st.session_state.gemini_key = secret_key
+        st.session_state.ai_key = secret_key
         st.success("✅ AI Chat enabled!")
     else:
-        gemini_key = st.text_input("Gemini API Key", type="password", placeholder="AIza...", help="Free from aistudio.google.com/apikey")
+        openai_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...", help="Get from platform.openai.com/api-keys")
         if gemini_key:
-            st.session_state.gemini_key = gemini_key
+            st.session_state.ai_key = openai_key
             st.success("✅ AI Chat enabled!")
         else:
             st.info("💡 Add Gemini API key to enable AI Chat")
@@ -850,11 +850,11 @@ with st.sidebar:
 # AI Hint Function
 # ─────────────────────────────────────────────
 def get_gemini_response(messages, key):
-    if not key or not GEMINI_AVAILABLE:
+    if not key or not AI_AVAILABLE:
         return None
     try:
         genai.configure(api_key=key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash-latest")
         prompt = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in messages])
         response = model.generate_content(prompt)
         return response.text
@@ -1079,13 +1079,13 @@ def run_quiz(questions_bank, score_file, color, total=20):
             else:
                 st.markdown(f'<div class="wrong-box">✗ Wrong. Answer: <strong>{q["options"][q["answer"]]}</strong></div>', unsafe_allow_html=True)
                 chat_key = f"ai_chat_{st.session_state.current}"
-                if st.session_state.get("gemini_key") and GEMINI_AVAILABLE:
+                if st.session_state.get("ai_key") and AI_AVAILABLE:
                     # Init chat history for this question
                     if chat_key not in st.session_state:
                         sys_prompt = f"You are a friendly tutor. Student got wrong: Q={q['question']}, Answer={q['options'][q['answer']]}, Category={q['category']}, Hint={q['explanation']}. Keep replies short, friendly, encouraging."
                         init_msgs = [{"role": "system", "content": sys_prompt}, {"role": "user", "content": "Explain why this is correct simply."}]
                         with st.spinner("🤖 AI is explaining..."):
-                            ai_msg = get_gemini_response(init_msgs, st.session_state.gemini_key)
+                            ai_msg = get_gemini_response(init_msgs, st.session_state.ai_key)
                         st.session_state[chat_key] = {"system": sys_prompt, "history": [{"role": "user", "content": "Explain why this is correct simply."}, {"role": "assistant", "content": ai_msg or "Sorry, could not explain right now."}]}
                         st.rerun()
 
@@ -1107,7 +1107,7 @@ def run_quiz(questions_bank, score_file, color, total=20):
                                     chat_data["history"].append({"role": "user", "content": follow_up.strip()})
                                     with st.spinner("🤖 Thinking..."):
                                         msgs = [{"role": "system", "content": chat_data["system"]}] + chat_data["history"]
-                                        ai_reply = get_gemini_response(msgs, st.session_state.gemini_key)
+                                        ai_reply = get_gemini_response(msgs, st.session_state.ai_key)
                                         chat_data["history"].append({"role": "assistant", "content": ai_reply or "Sorry, could not respond."})
                                         st.session_state[chat_key] = chat_data
                                     st.rerun()
