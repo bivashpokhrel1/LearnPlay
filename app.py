@@ -36,206 +36,259 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Outfit:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Outfit', 'Noto Sans KR', sans-serif;
-}
-/* ── Dark mode (default) ── */
-body, .stApp { background: #0c0c14 !important; color: #f0f0ff !important; }
-/* ── Light mode ── */
-body.light-mode, .stApp.light-mode { background: #f5f5ff !important; color: #111 !important; }
-.light-mode .game-card { background: #ffffff !important; border-color: #e0e0f0 !important; }
-.light-mode .q-card { background: #ffffff !important; border-color: #e0e0f0 !important; }
-.light-mode .flash-front { background: linear-gradient(135deg,#eeeeff,#f5f5ff) !important; border-color: #c0c0e0 !important; }
-.light-mode .flash-back { background: linear-gradient(135deg,#eeffee,#f5fff5) !important; border-color: #c0e0c0 !important; }
-.light-mode .scramble-card { background: #ffffff !important; border-color: #e0e0f0 !important; }
-.light-mode .score-card { background: #ffffff !important; border-color: #e0e0f0 !important; }
-.light-mode .home-lb { background: #ffffff !important; border-color: #e0e0f0 !important; }
-.light-mode .lb-row { border-color: #f0f0f0 !important; }
-.light-mode .lb-name { color: #111 !important; }
-.light-mode .hero-sub { color: #888 !important; }
-.light-mode .explanation { background: #f5f5ff !important; border-color: #e0e0f0 !important; color: #444 !important; }
-.light-mode .code-block { background: #f0f0f8 !important; border-color: #e0e0f0 !important; color: #111 !important; }
-.light-mode .correct-box { background: #e8fff0 !important; }
-.light-mode .wrong-box { background: #fff0f0 !important; }
-.light-mode .q-text { color: #111 !important; }
-.light-mode .q-cat { color: #888 !important; }
-.light-mode section[data-testid="stSidebar"] { background: #ffffff !important; border-color: #e0e0f0 !important; }
-.light-mode .stButton > button { background: #ffffff !important; border-color: #e0e0f0 !important; color: #111 !important; }
-.light-mode .stTextInput > div > div > input { background: #ffffff !important; border-color: #e0e0f0 !important; color: #111 !important; }
+html, body, [class*="css"] { font-family: 'Outfit', 'Noto Sans KR', sans-serif; }
 
 /* ── Animations ── */
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 0px transparent; }
-    50%       { box-shadow: 0 0 18px var(--glow); }
-}
-@keyframes shimmer {
-    0%   { background-position: -200% center; }
-    100% { background-position:  200% center; }
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50%       { transform: translateY(-6px); }
-}
-@keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-}
+@keyframes fadeInUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+@keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes glow-pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes rainbow { 0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)} }
 
-/* Home screen cards */
+/* ── Dark mode ── */
+body, .stApp { background: #07070f !important; color: #f0f0ff !important; }
+
+/* ── Game cards ── */
 .game-card {
-    background: #13131f;
-    border: 1px solid #1e1e30;
-    border-radius: 20px;
-    padding: 28px 20px 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), border-color 0.25s, box-shadow 0.25s;
-    margin-bottom: 16px;
+    border-radius: 24px; padding: 32px 20px 24px;
+    text-align: center; cursor: pointer; position: relative;
+    overflow: hidden; margin-bottom: 16px;
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), box-shadow 0.3s;
     animation: fadeInUp 0.5s ease both;
-    position: relative;
-    overflow: hidden;
 }
 .game-card::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.03) 100%);
-    pointer-events: none;
+    content: ''; position: absolute; inset: -2px;
+    border-radius: 26px; z-index: -1;
+    animation: spin 4s linear infinite;
 }
-.game-card:hover {
-    transform: translateY(-6px) scale(1.02);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+.game-card:hover { transform: translateY(-8px) scale(1.03); }
+.game-card-dq {
+    background: linear-gradient(135deg, #13102a 0%, #1a1040 100%);
+    border: 1px solid #6366f155;
+    box-shadow: 0 4px 24px #6366f122;
 }
-.game-icon {
-    font-size: 2.8rem; margin-bottom: 12px; display: block;
-    animation: float 3s ease-in-out infinite;
+.game-card-dq:hover { box-shadow: 0 16px 48px #6366f144; border-color: #6366f1aa; }
+.game-card-pq {
+    background: linear-gradient(135deg, #0d2010 0%, #102a14 100%);
+    border: 1px solid #4ade8055;
+    box-shadow: 0 4px 24px #4ade8022;
 }
-.game-title { font-size: 1.25rem; font-weight: 900; margin-bottom: 4px; }
-.game-desc { font-size: 0.78rem; color: #555; }
+.game-card-pq:hover { box-shadow: 0 16px 48px #4ade8044; border-color: #4ade80aa; }
+.game-card-fk {
+    background: linear-gradient(135deg, #2a0d1a 0%, #3a1025 100%);
+    border: 1px solid #ec489955;
+    box-shadow: 0 4px 24px #ec489922;
+}
+.game-card-fk:hover { box-shadow: 0 16px 48px #ec489944; border-color: #ec4899aa; }
+.game-card-sk {
+    background: linear-gradient(135deg, #2a1a0d 0%, #3a2210 100%);
+    border: 1px solid #f59e0b55;
+    box-shadow: 0 4px 24px #f59e0b22;
+}
+.game-card-sk:hover { box-shadow: 0 16px 48px #f59e0b44; border-color: #f59e0baa; }
+
+.game-icon { font-size: 3rem; margin-bottom: 14px; display: block; animation: float 3s ease-in-out infinite; }
+.game-title { font-size: 1.4rem; font-weight: 900; margin-bottom: 6px; letter-spacing: -0.5px; }
+.game-desc { font-size: 0.8rem; color: #666; margin-bottom: 8px; }
 .game-stats {
-    font-size: 0.78rem; margin-top: 10px; font-weight: 700;
-    display: inline-block;
-    background: linear-gradient(90deg, currentColor, #fff, currentColor);
-    background-size: 200% auto;
+    font-size: 0.78rem; font-weight: 700; display: inline-block;
+    background: linear-gradient(90deg, currentColor, #fff 50%, currentColor);
+    background-size: 200% auto; -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; background-clip: text;
+    animation: shimmer 3s linear infinite;
+}
+.top-scorer-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 99px; padding: 5px 14px;
+    font-size: 0.72rem; font-weight: 700; margin-top: 12px;
+    backdrop-filter: blur(8px);
+}
+
+/* ── Hero ── */
+.hero { text-align: center; padding: 20px 0 8px; animation: fadeInUp 0.4s ease both; }
+.hero-title {
+    font-size: 3.4rem; font-weight: 900; letter-spacing: -2px;
+    background: linear-gradient(135deg, #a78bfa 0%, #f472b6 40%, #fb923c 70%, #facc15 100%);
+    background-size: 200% auto; -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; background-clip: text;
+    animation: shimmer 5s linear infinite;
+}
+.hero-sub { font-size: 0.9rem; color: #555; margin-top: 4px; }
+
+/* ── Home leaderboard ── */
+.home-lb {
+    background: linear-gradient(135deg, #10101e, #13131f);
+    border: 1px solid #2a2a4a; border-radius: 16px;
+    padding: 20px 24px; margin-top: 28px;
+    animation: fadeInUp 0.7s ease both;
+    box-shadow: 0 4px 32px rgba(99,102,241,0.08);
+}
+.home-lb-title {
+    font-size: 0.7rem; font-weight: 800; letter-spacing: 3px;
+    text-transform: uppercase; margin-bottom: 14px;
+    background: linear-gradient(90deg, #a78bfa, #f472b6);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+.home-lb-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #1a1a2e; font-size:0.85rem; }
+.home-lb-row:last-child { border-bottom:none; }
+.home-lb-rank { min-width:28px; font-weight:800; font-size:1rem; }
+.home-lb-game { font-size:0.7rem; color:#555; min-width:80px; }
+.home-lb-name { flex:1; color:#f0f0ff; font-weight:600; }
+.home-lb-score { font-weight:800; }
+
+/* ── Question card ── */
+.q-card {
+    background: linear-gradient(135deg, #10101e, #13131f);
+    border: 1px solid #2a2a4a; border-radius: 16px;
+    padding: 24px; margin: 12px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.q-cat { font-size:0.65rem; font-weight:800; letter-spacing:3px; text-transform:uppercase; color:#555; margin-bottom:8px; }
+.q-text { font-size:1.1rem; font-weight:700; color:#f0f0ff; margin-bottom:8px; line-height:1.6; }
+.q-korean {
+    font-size:2rem; margin:8px 0; font-weight:700;
+    background: linear-gradient(135deg, #a78bfa, #818cf8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.code-block {
+    background: #050508; border: 1px solid #2a2a4a; border-radius: 10px;
+    padding: 12px 16px; font-family: 'Fira Code', monospace; font-size: 0.82rem;
+    color: #a5f3fc; margin: 10px 0; white-space: pre; overflow-x: auto;
+    border-left: 3px solid #818cf8;
+}
+.diff-easy { background:linear-gradient(135deg,#052e16,#0d3322); color:#4ade80; border:1px solid #4ade8044; border-radius:99px; padding:3px 10px; font-size:0.65rem; font-weight:800; }
+.diff-medium { background:linear-gradient(135deg,#2e1a05,#3a2208); color:#fbbf24; border:1px solid #fbbf2444; border-radius:99px; padding:3px 10px; font-size:0.65rem; font-weight:800; }
+.diff-hard { background:linear-gradient(135deg,#2e0505,#3a0a0a); color:#f87171; border:1px solid #f8717144; border-radius:99px; padding:3px 10px; font-size:0.65rem; font-weight:800; }
+
+.correct-box {
+    background: linear-gradient(135deg,#052e16,#0a2e1a);
+    border-left: 3px solid #4ade80; border-radius: 0 10px 10px 0;
+    padding: 12px 16px; color: #4ade80; font-weight: 700; margin: 8px 0;
+}
+.wrong-box {
+    background: linear-gradient(135deg,#2e0505,#2e0a0a);
+    border-left: 3px solid #f87171; border-radius: 0 10px 10px 0;
+    padding: 12px 16px; color: #f87171; font-weight: 700; margin: 8px 0;
+}
+.explanation {
+    background: linear-gradient(135deg, #10101e, #13131f);
+    border: 1px solid #2a2a4a; border-radius: 10px;
+    padding: 12px 16px; color: #a0a0c0; font-size: 0.85rem; margin: 8px 0;
+    border-left: 3px solid #6366f1;
+}
+
+/* ── Flashcard ── */
+.flash-front {
+    background: linear-gradient(135deg, #1a1040, #13102a, #1e1050);
+    border: 1px solid #6366f144; border-radius: 20px;
+    padding: 44px 32px; text-align: center; min-height: 220px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; margin: 12px 0;
+    box-shadow: 0 8px 32px #6366f122;
+}
+.flash-back {
+    background: linear-gradient(135deg, #0a2e14, #0d3320, #0a2818);
+    border: 1px solid #4ade8044; border-radius: 20px;
+    padding: 44px 32px; text-align: center; min-height: 220px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; margin: 12px 0;
+    box-shadow: 0 8px 32px #4ade8022;
+}
+.card-korean {
+    font-size: 3.2rem; font-weight: 900; margin-bottom: 8px;
+    background: linear-gradient(135deg, #a78bfa, #818cf8, #c084fc);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; animation: shimmer 3s linear infinite; background-size: 200%;
+}
+.card-romanized { font-size: 1rem; color: #666; letter-spacing: 1px; }
+.card-english {
+    font-size: 1.8rem; font-weight: 800; margin-bottom: 8px;
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.card-example { font-size: 0.85rem; color: #666; font-style: italic; margin-top: 8px; max-width: 320px; }
+
+/* ── ScramKo ── */
+.scramble-card {
+    background: linear-gradient(135deg, #1a1208, #231808);
+    border: 1px solid #f59e0b44; border-radius: 16px;
+    padding: 32px; text-align: center; margin: 12px 0;
+    box-shadow: 0 8px 32px #f59e0b11;
+}
+.scrambled-word {
+    font-size: 2.8rem; font-weight: 900; letter-spacing: 10px; margin: 16px 0;
+    background: linear-gradient(135deg, #f59e0b, #fbbf24, #f97316);
+    background-size: 200%; -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; background-clip: text;
+    animation: shimmer 2s linear infinite;
+}
+.meaning-text { font-size: 1rem; color: #888; }
+.answer-reveal {
+    background: linear-gradient(135deg, #0f0f1a, #13131f);
+    border: 1px solid #2a2a4a; border-radius: 10px;
+    padding: 16px; text-align: center; margin: 8px 0;
+}
+.korean-big {
+    font-size: 2rem; font-weight: 800;
+    background: linear-gradient(135deg, #a78bfa, #c084fc);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+/* ── Score card ── */
+.score-card {
+    background: linear-gradient(135deg, #10101e, #13131f, #101020);
+    border: 1px solid #2a2a4a; border-radius: 20px;
+    padding: 32px; text-align: center; margin: 12px 0;
+    box-shadow: 0 8px 40px rgba(99,102,241,0.15);
+}
+.big-score {
+    font-size: 4.5rem; font-weight: 900;
+    background: linear-gradient(135deg, #a78bfa, #f472b6, #fb923c);
+    background-size: 200%; -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; background-clip: text;
     animation: shimmer 3s linear infinite;
 }
 
-/* Top scorer pill on card */
-.top-scorer-pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: #0d0d18; border: 1px solid #2a2a4a;
-    border-radius: 99px; padding: 4px 12px;
-    font-size: 0.72rem; font-weight: 700;
-    margin-top: 10px;
-    animation: fadeInUp 0.6s ease both;
-}
-.top-scorer-name { color: #f0f0ff; }
-.top-scorer-score { color: inherit; }
-
-/* Hero */
-.hero { text-align: center; padding: 20px 0 12px 0; animation: fadeInUp 0.4s ease both; }
-.hero-title {
-    font-size: 3.2rem; font-weight: 900;
-    background: linear-gradient(135deg, #6366f1 0%, #ec4899 50%, #f59e0b 100%);
-    background-size: 200% auto;
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text; letter-spacing: -2px;
-    animation: shimmer 4s linear infinite;
-}
-.hero-sub { font-size: 0.88rem; color: #444; margin-top: 4px; }
-
-/* Home leaderboard */
-.home-lb {
-    background: #13131f; border: 1px solid #1e1e30;
-    border-radius: 14px; padding: 16px 20px; margin-top: 24px;
-    animation: fadeInUp 0.7s ease both;
-}
-.home-lb-title {
-    font-size: 0.7rem; font-weight: 700; letter-spacing: 3px;
-    text-transform: uppercase; color: #444; margin-bottom: 12px;
-}
-.home-lb-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 0; border-bottom: 1px solid #0f0f1a;
-    font-size: 0.85rem;
-}
-.home-lb-row:last-child { border-bottom: none; }
-.home-lb-rank { min-width: 24px; font-weight: 800; }
-.home-lb-game { font-size: 0.7rem; color: #444; min-width: 70px; }
-.home-lb-name { flex: 1; color: #f0f0ff; font-weight: 600; }
-.home-lb-score { font-weight: 800; }
-
-/* Question card */
-.q-card {
-    background: #13131f; border: 1px solid #1e1e30;
-    border-radius: 14px; padding: 24px; margin: 12px 0;
-}
-.q-cat { font-size: 0.65rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #444; margin-bottom: 8px; }
-.q-text { font-size: 1.05rem; font-weight: 600; color: #f0f0ff; margin-bottom: 8px; line-height: 1.5; }
-.q-korean { font-size: 1.8rem; color: #6366f1; margin: 6px 0; }
-.code-block {
-    background: #0c0c14; border: 1px solid #1e1e30; border-radius: 8px;
-    padding: 10px 14px; font-family: 'Fira Code', monospace; font-size: 0.82rem;
-    color: #f0f0ff; margin: 8px 0; white-space: pre; overflow-x: auto;
-}
-.diff-easy { background:#0d2e1a; color:#4ade80; border:1px solid #4ade8033; border-radius:99px; padding:2px 8px; font-size:0.65rem; font-weight:700; }
-.diff-medium { background:#2e2a0d; color:#f59e0b; border:1px solid #f59e0b33; border-radius:99px; padding:2px 8px; font-size:0.65rem; font-weight:700; }
-.diff-hard { background:#2e0d0d; color:#f87171; border:1px solid #f8717133; border-radius:99px; padding:2px 8px; font-size:0.65rem; font-weight:700; }
-
-.correct-box { background:#0d2e1a; border-left:3px solid #4ade80; border-radius:0 8px 8px 0; padding:10px 14px; color:#4ade80; font-weight:700; margin:6px 0; }
-.wrong-box { background:#2e0d0d; border-left:3px solid #f87171; border-radius:0 8px 8px 0; padding:10px 14px; color:#f87171; font-weight:700; margin:6px 0; }
-.explanation { background:#13131f; border:1px solid #1e1e30; border-radius:8px; padding:10px 14px; color:#888; font-size:0.82rem; margin:6px 0; }
-
-/* Flashcard */
-.flash-front { background:linear-gradient(135deg,#1a1a2e,#16213e); border:1px solid #2a2a4a; border-radius:18px; padding:40px 28px; text-align:center; min-height:200px; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:12px 0; }
-.flash-back { background:linear-gradient(135deg,#1a2e1a,#162116); border:1px solid #2a4a2a; border-radius:18px; padding:40px 28px; text-align:center; min-height:200px; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:12px 0; }
-.card-korean { font-size:3rem; font-weight:700; color:#8b5cf6; margin-bottom:6px; }
-.card-romanized { font-size:0.95rem; color:#555; }
-.card-english { font-size:1.6rem; font-weight:700; color:#4ade80; margin-bottom:6px; }
-.card-example { font-size:0.82rem; color:#777; font-style:italic; margin-top:6px; }
-
-/* ScramKo */
-.scramble-card { background:#13131f; border:1px solid #1e1e30; border-radius:14px; padding:28px; text-align:center; margin:12px 0; }
-.scrambled-word { font-size:2.2rem; font-weight:900; letter-spacing:6px; color:#f59e0b; margin:14px 0; }
-.meaning-text { font-size:0.95rem; color:#888; }
-.answer-reveal { background:#0c0c14; border:1px solid #1e1e30; border-radius:8px; padding:12px; text-align:center; margin:6px 0; }
-.korean-big { font-size:1.8rem; color:#8b5cf6; font-weight:700; }
-
-/* Score card */
-.score-card { background:#13131f; border:1px solid #1e1e30; border-radius:14px; padding:24px; text-align:center; margin:12px 0; }
-.big-score { font-size:3.5rem; font-weight:900; background:linear-gradient(135deg,#6366f1,#ec4899); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-
-/* Leaderboard */
-.lb-row { display:flex; align-items:center; padding:8px 0; border-bottom:1px solid #1a1a2a; font-size:0.88rem; }
+/* ── Leaderboard ── */
+.lb-row { display:flex; align-items:center; padding:10px 0; border-bottom:1px solid #1a1a2e; font-size:0.88rem; }
 .lb-row:last-child { border-bottom:none; }
-.lb-rank { color:#444; min-width:28px; font-weight:700; }
-.lb-name { flex:1; color:#f0f0ff; }
-.lb-score { color:#6366f1; font-weight:700; }
+.lb-rank { color:#555; min-width:30px; font-weight:800; font-size:0.95rem; }
+.lb-name { flex:1; color:#f0f0ff; font-weight:600; }
+.lb-score { font-weight:800; background:linear-gradient(135deg,#a78bfa,#818cf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 
-.progress-text { color:#444; font-size:0.82rem; text-align:center; }
+.progress-text { color: #555; font-size: 0.82rem; text-align: center; }
 
-/* Buttons */
+/* ── Buttons ── */
 .stButton > button {
-    background:#13131f !important; border:1px solid #1e1e30 !important;
-    color:#f0f0ff !important; border-radius:8px !important;
-    font-family:'Outfit',sans-serif !important; font-weight:700 !important;
+    background: linear-gradient(135deg, #13131f, #1a1a2e) !important;
+    border: 1px solid #2a2a4a !important; color: #f0f0ff !important;
+    border-radius: 10px !important; font-family: 'Outfit', sans-serif !important;
+    font-weight: 700 !important; transition: all 0.2s !important;
 }
-.stButton > button:hover { border-color:#6366f1 !important; color:#6366f1 !important; }
-
+.stButton > button:hover {
+    border-color: #a78bfa !important; color: #a78bfa !important;
+    box-shadow: 0 0 16px #a78bfa33 !important;
+    transform: translateY(-1px) !important;
+}
 .stTextInput > div > div > input {
-    background:#13131f !important; border:1px solid #1e1e30 !important;
-    border-radius:8px !important; color:#f0f0ff !important;
-    font-family:'Outfit','Noto Sans KR',sans-serif !important;
-    font-size:1rem !important; text-align:center !important;
+    background: linear-gradient(135deg, #10101e, #13131f) !important;
+    border: 1px solid #2a2a4a !important; border-radius: 10px !important;
+    color: #f0f0ff !important; font-family: 'Outfit', 'Noto Sans KR', sans-serif !important;
+    font-size: 1rem !important; text-align: center !important;
 }
-.stSelectbox > div > div { background:#13131f !important; border-color:#1e1e30 !important; color:#f0f0ff !important; }
-section[data-testid="stSidebar"] { background:#080810 !important; border-right:1px solid #1e1e30 !important; }
-#MainMenu, footer { visibility:hidden; }
+.stTextInput > div > div > input:focus { border-color: #a78bfa !important; box-shadow: 0 0 0 3px #a78bfa22 !important; }
+.stSelectbox > div > div { background: #13131f !important; border-color: #2a2a4a !important; color: #f0f0ff !important; }
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #080810, #0a0a16) !important;
+    border-right: 1px solid #2a2a4a !important;
+}
+/* Progress bar */
+.stProgress > div > div { background: linear-gradient(90deg, #6366f1, #a78bfa, #ec4899) !important; border-radius: 99px !important; }
+#MainMenu, footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -847,7 +900,7 @@ if st.session_state.page == "home":
 
     with col1:
         st.markdown(f'''<div class="gc">
-          <div class="game-card" style="border-color:#6366f144;">
+          <div class="game-card game-card-dq">
             <span class="game-icon">🇰🇷</span>
             <div class="game-title" style="color:#818cf8;">DumbQuiz</div>
             <div class="game-desc">Korean language quiz</div>
@@ -862,7 +915,7 @@ if st.session_state.page == "home":
 
     with col2:
         st.markdown(f'''<div class="gc">
-          <div class="game-card" style="border-color:#4ade8044;">
+          <div class="game-card game-card-pq">
             <span class="game-icon">🐍</span>
             <div class="game-title" style="color:#4ade80;">PyQuiz</div>
             <div class="game-desc">Python programming quiz</div>
@@ -877,7 +930,7 @@ if st.session_state.page == "home":
 
     with col1:
         st.markdown(f'''<div class="gc">
-          <div class="game-card" style="border-color:#ec489944;">
+          <div class="game-card game-card-fk">
             <span class="game-icon">🃏</span>
             <div class="game-title" style="color:#ec4899;">Flashko</div>
             <div class="game-desc">Korean flashcards</div>
@@ -896,7 +949,7 @@ if st.session_state.page == "home":
 
     with col2:
         st.markdown(f'''<div class="gc">
-          <div class="game-card" style="border-color:#f59e0b44;">
+          <div class="game-card game-card-sk">
             <span class="game-icon">🔤</span>
             <div class="game-title" style="color:#f59e0b;">ScramKo</div>
             <div class="game-desc">Korean word scramble</div>
